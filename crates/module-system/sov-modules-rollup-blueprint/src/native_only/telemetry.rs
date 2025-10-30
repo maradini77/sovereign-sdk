@@ -7,11 +7,11 @@ use opentelemetry::trace::TracerProvider as _;
 use opentelemetry::KeyValue;
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::LogExporter;
-use opentelemetry_sdk::logs::{Logger, LoggerProvider};
-use opentelemetry_sdk::trace::{RandomIdGenerator, Sampler, Tracer, TracerProvider};
-use opentelemetry_sdk::{runtime, Resource};
+use opentelemetry_sdk::logs::{SdkLogger, SdkLoggerProvider};
+use opentelemetry_sdk::trace::{RandomIdGenerator, Sampler, SdkTracer, SdkTracerProvider};
+use opentelemetry_sdk::Resource;
 use opentelemetry_semantic_conventions::attribute::{
-    DEPLOYMENT_ENVIRONMENT_NAME, SERVICE_NAME, SERVICE_VERSION, VCS_REPOSITORY_REF_REVISION,
+    DEPLOYMENT_ENVIRONMENT_NAME, SERVICE_NAME, SERVICE_VERSION,
 };
 use opentelemetry_semantic_conventions::SCHEMA_URL;
 use tracing::Subscriber;
@@ -22,8 +22,8 @@ const SOV_OTEL_ENV: &str = "SOV_OTEL_ENABLED";
 
 /// Controls shutdown of providers
 pub struct OtelGuard {
-    pub(crate) tracer_provider: TracerProvider,
-    pub(crate) logger_provider: LoggerProvider,
+    pub(crate) tracer_provider: SdkTracerProvider,
+    pub(crate) logger_provider: SdkLoggerProvider,
 }
 
 impl OtelGuard {
@@ -39,12 +39,12 @@ impl OtelGuard {
     }
 
     /// Export **logs** into OpenTelemetry provider
-    pub fn otel_logging_layer(&self) -> OpenTelemetryTracingBridge<LoggerProvider, Logger> {
+    pub fn otel_logging_layer(&self) -> OpenTelemetryTracingBridge<SdkLoggerProvider, SdkLogger> {
         OpenTelemetryTracingBridge::new(&self.logger_provider)
     }
 
     /// Export **traces, aka spans** into OpenTelemetry provider.
-    pub fn otel_tracing_layer<S>(&self) -> OpenTelemetryLayer<S, Tracer>
+    pub fn otel_tracing_layer<S>(&self) -> OpenTelemetryLayer<S, SdkTracer>
     where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
@@ -72,34 +72,36 @@ fn resource() -> Resource {
     } else {
         "release"
     };
-    Resource::from_schema_url(
-        [
-            KeyValue::new(SERVICE_NAME, env!("CARGO_PKG_NAME")),
-            KeyValue::new(SERVICE_VERSION, env!("CARGO_PKG_VERSION")),
-            KeyValue::new(DEPLOYMENT_ENVIRONMENT_NAME, env_name),
-            KeyValue::new("build.mode", build_mode),
-            KeyValue::new(VCS_REPOSITORY_REF_REVISION, GIT_COMMIT_HASH),
-        ],
-        SCHEMA_URL,
-    )
+    Resource::builder_empty()
+        .with_schema_url(
+            [
+                KeyValue::new(SERVICE_NAME, env!("CARGO_PKG_NAME")),
+                KeyValue::new(SERVICE_VERSION, env!("CARGO_PKG_VERSION")),
+                KeyValue::new(DEPLOYMENT_ENVIRONMENT_NAME, env_name),
+                KeyValue::new("build.mode", build_mode),
+                KeyValue::new("vcs.ref.head.revision", GIT_COMMIT_HASH),
+            ],
+            SCHEMA_URL,
+        )
+        .build()
 }
 
-fn init_logger_provider() -> anyhow::Result<LoggerProvider> {
+fn init_logger_provider() -> anyhow::Result<SdkLoggerProvider> {
     let exporter = LogExporter::builder().with_tonic().build()?;
 
-    Ok(LoggerProvider::builder()
+    Ok(SdkLoggerProvider::builder()
         .with_resource(resource())
-        .with_batch_exporter(exporter, runtime::Tokio)
+        .with_batch_exporter(exporter)
         .build())
 }
 
 // Construct TracerProvider for OpenTelemetryLayer
-fn init_tracer_provider() -> anyhow::Result<TracerProvider> {
+fn init_tracer_provider() -> anyhow::Result<SdkTracerProvider> {
     let exporter_builder = opentelemetry_otlp::SpanExporter::builder().with_tonic();
 
     let trace_exporter = exporter_builder.build()?;
 
-    Ok(TracerProvider::builder()
+    Ok(SdkTracerProvider::builder()
         // Customize sampling strategy
         .with_sampler(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
             1.0,
@@ -107,7 +109,7 @@ fn init_tracer_provider() -> anyhow::Result<TracerProvider> {
         // If export trace to AWS X-Ray, you can use XrayIdGenerator
         .with_id_generator(RandomIdGenerator::default())
         .with_resource(resource())
-        .with_batch_exporter(trace_exporter, runtime::Tokio)
+        .with_batch_exporter(trace_exporter)
         .build())
 }
 
