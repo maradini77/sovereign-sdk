@@ -1,6 +1,6 @@
 use alloy::eips::BlockNumberOrTag;
 use alloy::network::TransactionBuilder;
-use alloy::providers::{Provider, ProviderBuilder};
+use alloy::providers::{Provider, ProviderBuilder, WsConnect};
 use alloy::rpc::types::{Filter, TransactionRequest};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::{hex, providers::DynProvider};
@@ -8,10 +8,14 @@ use alloy_primitives::U256;
 use anyhow::{anyhow, Result};
 use clap::{Parser, Subcommand};
 use futures::future::try_join_all;
+use futures::StreamExt;
 use reqwest::Url;
 use std::net::SocketAddr;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 
+use crate::logs::LOGS_RECEIVED_VIA_TX_SUBMIT;
 use crate::{logs::LogsSoakTest, uniswap::UniSoakTest};
 use sov_eth_client::LogsWithCursorProvider;
 
@@ -21,6 +25,8 @@ mod uniswap;
 
 /// Maximum number of concurrent workers supported due to private key derivation constraints.
 const MAX_WORKERS: usize = 255;
+
+// static LOGS_RECEIVED_VIA_WS: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Parser, Debug)]
 #[command(name = "sov-evm-soak-testing")]
@@ -40,6 +46,9 @@ struct Args {
 
     #[command(subcommand)]
     test: TestType,
+
+    #[arg(short, long, default_value = "false")]
+    subscribe_logs: bool,
 }
 
 #[derive(Subcommand, Clone, Debug)]
@@ -92,6 +101,21 @@ pub(crate) fn alloy_client(rpc_addr: SocketAddr, signer: PrivateKeySigner) -> Re
         .wallet(signer)
         .connect_http(url)
         .erased();
+    Ok(client)
+}
+
+/// Creates an Alloy HTTP client connected to the specified RPC server.
+pub(crate) async fn alloy_client_ws(
+    rpc_addr: SocketAddr,
+    signer: PrivateKeySigner,
+) -> Result<DynProvider> {
+    let connection_string = format!("ws://{rpc_addr}/rpc");
+    println!("Creating WS client for {connection_string}");
+    let ws = WsConnect::new(connection_string);
+    let config = ws.config().cloned().unwrap_or_default();
+    config.read_buffer_size(128 * 1024 * 1024);
+    let ws = ws.with_config(config);
+    let client = ProviderBuilder::new().on_ws(ws).await?.erased();
     Ok(client)
 }
 
@@ -215,6 +239,8 @@ async fn run_logs_test(
         logs.len(),
         fetch_logs.elapsed()
     );
+    // Sleep for 1 second to allow logs to be received via WS
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
     Ok(())
 }
@@ -229,6 +255,31 @@ async fn run_simple_storage_test(rpc_addr: SocketAddr, private_key: &str) -> Res
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+
+    let subscribe_logs = args.subscribe_logs;
+    if subscribe_logs {
+        let client = alloy_client_ws(args.rpc_addr, args.private_key.parse()?).await?;
+        tokio::task::spawn(async move {
+            let start_time = Instant::now();
+            let mut stream = client
+                .subscribe_logs(&Filter::new())
+                .await
+                .expect("Failed to subscribe to logs")
+                .into_stream();
+            let mut count: usize = 0;
+            while let Some(_) = stream.next().await {
+                // let count = LOGS_RECEIVED_VIA_WS.fetch_add(1, Ordering::Relaxed);
+                count += 1;
+                if count % 1000 == 0 {
+                    let elapsed = start_time.elapsed();
+                    let logs_from_tx_submit = LOGS_RECEIVED_VIA_TX_SUBMIT.load(Ordering::Relaxed);
+                    println!("After {}ms: Logs received via WS: {count}. Logs received via TX submit: {logs_from_tx_submit}. Difference: {}", elapsed.as_millis(), logs_from_tx_submit- count);
+                }
+            }
+
+            println!("Log subscription exited after {} logs", count);
+        });
+    }
 
     match args.test {
         TestType::Uniswap { count, num_workers } => {

@@ -54,7 +54,7 @@ where
 }
 
 async fn stream_logs<S, Seq>(
-    accepted_sink: SubscriptionSink,
+    mut accepted_sink: SubscriptionSink,
     filter: Box<Filter>,
     ethereum: Arc<Ethereum<S, Seq>>,
 ) where
@@ -78,70 +78,111 @@ async fn stream_logs<S, Seq>(
 
     let state_updates = &mut ethereum.sequencer.api_state().checkpoint_receiver();
 
-    while state_updates.changed().await.is_ok() {
-        let state = &mut ethereum.api_state_accessor();
-
-        let pending_block = evm.pending_block(state);
-        let curr_last_tx_index = pending_block.transactions.end;
-
-        if curr_last_tx_index <= prev_last_tx_index {
-            continue;
-        }
-
-        for index in prev_last_tx_index..curr_last_tx_index {
-            let Some(receipt) = evm.receipt(index, state) else {
-                // This can happen if the state was pruned.
-                tracing::error!(index, "Receipt does not exist");
-                return;
-            };
-
-            if block.number() != receipt.block_number {
-                match evm.get_maybe_sealed_block(receipt.block_number, state) {
-                    Some(b) => block = b,
-                    None => {
-                        tracing::error!(
-                            block_number = receipt.block_number,
-                            "Block does not exist"
-                        );
-                        return;
-                    }
-                }
+    let mut iters = 0;
+    loop {
+        tokio::select! {
+             _ = accepted_sink.closed() => {
+                break;
             }
+            updated = state_updates.changed() => {
+                if updated.is_err() {
+                    break;
+                }
+                let start = std::time::Instant::now();
+                let state = &mut ethereum.api_state_accessor();
+                let state_clone_time = start.elapsed();
 
-            let transaction_index = index - block.transactions_start();
+                let pending_block = evm.pending_block(state);
+                let pending_block_time = start.elapsed() - state_clone_time;
+                let curr_last_tx_index = pending_block.transactions.end;
 
-            for (log_index_in_tx, log) in receipt.receipt.logs.into_iter().enumerate() {
-                if filter.matches(&log) {
-                    let rpc_log = alloy_rpc_types::Log {
-                        inner: log,
-                        block_hash: block.hash(),
-                        block_number: Some(block.number()),
-                        block_timestamp: Some(block.timestamp()),
-                        transaction_hash: Some(receipt.transaction_hash),
-                        transaction_index: Some(receipt.transaction_index),
-                        log_index: Some(receipt.log_index_start + log_index_in_tx as u64),
-                        removed: false,
+                if curr_last_tx_index <= prev_last_tx_index {
+                    continue;
+                }
+
+                let mut receipt_fetch = std::time::Duration::ZERO;
+                let mut process_receipt_time = std::time::Duration::ZERO;
+                let mut serde_time = std::time::Duration::ZERO;
+                let mut actual_send_time = std::time::Duration::ZERO;
+                let num_txs = curr_last_tx_index - prev_last_tx_index;
+                for index in prev_last_tx_index..curr_last_tx_index {
+
+                    let inner_start = std::time::Instant::now();
+                    let Some(receipt) = evm.receipt(index, state) else {
+                        // This can happen if the state was pruned.
+                        tracing::error!(index, "Receipt does not exist");
+                        return;
                     };
+                    let receipt_fetch_inner = inner_start.elapsed();
+                    receipt_fetch += receipt_fetch_inner;
 
-                    assert_eq!(receipt.transaction_index, transaction_index);
-
-                    let msg = SubscriptionMessage::new(
-                        accepted_sink.method_name(),
-                        accepted_sink.subscription_id(),
-                        &rpc_log,
-                    )
-                    .unwrap_or_else(|err| {
-                        panic!("Impossible: can't serialize log. Log: {rpc_log:?}, Err: {err:?}",)
-                    });
-
-                    if let Err(err) = accepted_sink.send(msg).await {
-                        tracing::info!(%err, "The subscription client disconnected from the server.");
-                        return;
+                    if block.number() != receipt.block_number {
+                        match evm.get_maybe_sealed_block(receipt.block_number, state) {
+                            Some(b) => block = b,
+                            None => {
+                                tracing::error!(
+                                    block_number = receipt.block_number,
+                                    "Block does not exist"
+                                );
+                                return;
+                            }
+                        }
                     }
+
+                    let transaction_index = index - block.transactions_start();
+
+                    let process_receipt_start = std::time::Instant::now();
+                    for (log_index_in_tx, log) in receipt.receipt.logs.into_iter().enumerate() {
+                        let serde_start = std::time::Instant::now();
+                        if filter.matches(&log) {
+                            let rpc_log = alloy_rpc_types::Log {
+                                inner: log,
+                                block_hash: block.hash(),
+                                block_number: Some(block.number()),
+                                block_timestamp: Some(block.timestamp()),
+                                transaction_hash: Some(receipt.transaction_hash),
+                                transaction_index: Some(receipt.transaction_index),
+                                log_index: Some(receipt.log_index_start + log_index_in_tx as u64),
+                                removed: false,
+                            };
+
+                            assert_eq!(receipt.transaction_index, transaction_index);
+
+                            let msg = SubscriptionMessage::new(
+                                accepted_sink.method_name(),
+                                accepted_sink.subscription_id(),
+                                &rpc_log,
+                            )
+                            .unwrap_or_else(|err| {
+                                panic!("Impossible: can't serialize log. Log: {rpc_log:?}, Err: {err:?}",)
+                            });
+                            serde_time += serde_start.elapsed();
+
+                            let send_start = std::time::Instant::now();
+                            if let Err(err) = accepted_sink.send(msg).await {
+                                // if let jsonrpsee::TrySendError::Full(_) = err {
+                                //     // tracing::info!("The subscription channel Filled up. Dropping the message.");
+                                //     continue;
+                                // }
+                                tracing::info!(%err, "The subscription client disconnected from the server.");
+                                return;
+                            }
+                            actual_send_time += send_start.elapsed();
+                        }
+                    }
+                    process_receipt_time += process_receipt_start.elapsed();
                 }
+                iters += 1;
+                    let state_clone_time = state_clone_time.as_micros();
+                    let pending_block_time = pending_block_time.as_micros();
+                    let receipt_fetch = receipt_fetch.as_micros();
+                    let process_receipt_time = process_receipt_time.as_micros();
+                    let serde_time = serde_time.as_micros();
+                    let actual_send_time = actual_send_time.as_micros();
+                    tracing::info!("Iteration {iters}. Did {num_txs} txs: State clone time: {state_clone_time}µs, Pending block time: {pending_block_time}µs, Receipt fetch time: {receipt_fetch}µs, Process receipt time: {process_receipt_time}µs, Serde time: {serde_time}µs, Actual send time: {actual_send_time}µs");
+                prev_last_tx_index = curr_last_tx_index;
             }
         }
-        prev_last_tx_index = curr_last_tx_index;
     }
 }
 
