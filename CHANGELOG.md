@@ -1,4 +1,8 @@
+# 2025-10-31
+- #2002 **Resync breaking change**. This PR moves rollup configuration files to demo-rollup/configs directory. 
+
 # 2025-10-29
+- #1996 Set gas limit to 1B on ETH API access.
 - #1838 Add binary WebSocket frame support to RPC server and client.
 - #1997 Fix `eth_sendTransaction` contract deployments without gas limit by converting `to: null` to `TxKind::Create`.
 
@@ -6,6 +10,7 @@
 - #1987 Added `newHeads` subscription to `eth_subscribe`.
 
 # 2025-10-27
+- #1981 **Breaking change** Adds support for celestia-client allowing direct use of RPC providers. Full message TBD.
 - #1976 Fixed `eth_subscribe` parameter parsing to accept standard Ethereum JSON-RPC positional parameters.
 
 # 2025-10-24
