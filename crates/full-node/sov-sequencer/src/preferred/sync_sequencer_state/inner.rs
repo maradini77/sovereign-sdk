@@ -219,7 +219,12 @@ where
             );
         });
 
-        match latest_finalized_sequence_number(latest_state_info, &mut runtime) {
+        if latest_state_info.latest_finalized_slot_number.get() > 10 {
+            tracing::warn!("Pausing during prune_sequencer_db");
+            // tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+            tracing::warn!("Resuming after pause. Will ready {}", latest_state_info.latest_finalized_slot_number);
+        }
+        match latest_finalized_sequence_number(latest_state_info, &mut runtime).await {
             Some(num) => {
                 self.executor_events_sender.prune(num).await;
             }

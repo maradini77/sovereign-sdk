@@ -208,6 +208,7 @@ where
                 if let Some(user_version) =
                     current_user_version.and_then(|v| v.checked_sub(versions_to_keep as u64))
                 {
+                    tracing::warn!("Pruning state up to version {}", user_version);
                     let prunable_keys = user.iter_pruning_keys_up_to_version(user_version)?;
                     for key in prunable_keys {
                         // Prune the pruning table.

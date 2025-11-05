@@ -576,7 +576,7 @@ pub enum StoredBlob {
     },
 }
 
-pub(crate) fn latest_finalized_sequence_number<S, Rt>(
+pub(crate) async fn latest_finalized_sequence_number<S, Rt>(
     latest_state_info: &StateUpdateInfo<S::Storage>,
     runtime: &mut Rt,
 ) -> Option<SequenceNumber>
@@ -584,12 +584,17 @@ where
     S: Spec,
     Rt: Runtime<S>,
 {
+    tracing::warn!("Creating checkpoint");
     let mut checkpoint = StateCheckpoint::new(latest_state_info.storage.clone(), &runtime.kernel());
+    tracing::warn!("Checkpoint created");
     let mut state = KernelStateAccessor::from_checkpoint(&runtime.kernel(), &mut checkpoint);
+    tracing::warn!("Reading from storage at slot number {}", latest_state_info.latest_finalized_slot_number);
     state.read_from_storage_at_slot_number(latest_state_info.latest_finalized_slot_number);
 
-    runtime
+    let res = runtime
         .kernel()
         .next_sequence_number(&mut state)
-        .checked_sub(1)
+        .checked_sub(1);
+    tracing::warn!("Finished reading direct from storage. Got sequence number {:?}", res);
+    res
 }

@@ -461,6 +461,7 @@ where
             // UNWRAP: Checked above.
             let pruner = std::mem::take(&mut self.pruner).unwrap();
             let prune_group = pruner.join()?;
+            tracing::warn!("Pruner finished. Committing changes on next iteration!");
             let start = std::time::Instant::now();
             let hit_size_limit = prune_group.hit_size_limit();
             self.db_group.commit_pruning(prune_group)?;

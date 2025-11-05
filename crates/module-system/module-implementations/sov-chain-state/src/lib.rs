@@ -271,6 +271,7 @@ impl<S: Spec> ChainState<S> {
         &self,
         state: &mut BootstrapWorkingSet<'_, S>,
     ) -> VisibleSlotNumber {
+        tracing::warn!("Getting next visible slot number");
         self.next_visible_slot_number
             .get(state)
             .unwrap_infallible()
@@ -472,6 +473,7 @@ impl<S: Spec> ChainState<S> {
         &self,
         state: &mut Accessor,
     ) -> Result<RollupHeight, Accessor::Error> {
+        tracing::warn!("Getting rollup height");
         Ok(self
             .current_heights
             .get(state)?

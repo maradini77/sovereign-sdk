@@ -159,10 +159,12 @@ impl StorableMockDaLayer {
 
         self.next_height += 1;
 
+        
         let next_finalized_height = self
             .next_height
-            .checked_sub(self.blocks_to_finality.saturating_add(1))
+            .checked_sub(self.blocks_to_finality.saturating_add(1) + 10)
             .unwrap_or_default();
+        tracing::warn!("Setting next finalized height to {}", next_finalized_height);
         // Meaning that "chain head - blocks to finalization" has moved beyond genesis block.
         if next_finalized_height > 0 && next_finalized_height > self.last_finalized_height {
             self.last_finalized_height = next_finalized_height;

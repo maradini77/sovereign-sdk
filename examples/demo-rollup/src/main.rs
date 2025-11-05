@@ -33,7 +33,7 @@ struct Args {
     da_layer: SupportedDaLayer,
 
     /// The storage implementation
-    #[arg(long, default_value = "jmt")]
+    #[arg(long, default_value = "nomt")]
     storage: SupportedStorage,
 
     /// The path to the rollup config.
@@ -45,7 +45,7 @@ struct Args {
     genesis_config_dir: PathBuf,
 
     /// Listen address for Prometheus exporter.
-    #[arg(long, default_value = "127.0.0.1:9845")]
+    #[arg(long, default_value = "127.0.0.1:9846")]
     prometheus_exporter_bind: String,
 
     /// Stops the rollup at a given height.

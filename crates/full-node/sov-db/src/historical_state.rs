@@ -180,6 +180,7 @@ impl HistoricalStateReader {
         key: &SchemaKey,
         version: SlotNumber,
     ) -> anyhow::Result<Option<SchemaValue>> {
+        tracing::warn!("Getting historical user value for key {:?} at version {}", key, version);
         Ok(self
             .user
             .get_historical_borrowed(key, version.get())?
@@ -200,6 +201,7 @@ impl HistoricalStateReader {
         key: &SchemaKey,
         version: SlotNumber,
     ) -> anyhow::Result<Option<SchemaValue>> {
+        tracing::warn!("Getting historical user value for key {:?} at version {}", key, version);
         Ok(self
             .kernel
             .get_historical_borrowed(key, version.get())?
