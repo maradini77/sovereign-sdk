@@ -160,7 +160,7 @@ pub trait FullNodeBlueprint<M: ExecutionMode>: RollupBlueprint<M> {
         prover_config: Option<RollupProverConfig<<Self::Spec as Spec>::InnerZkvm>>,
         start_at_rollup_height: Option<RollupHeight>,
         stop_at_rollup_height: Option<RollupHeight>,
-        exec_config: &<<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::Input,
+        exec_config: Option<<<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::Input>,
     ) -> anyhow::Result<Rollup<Self, M>>
     where
         <Self::Spec as Spec>::Storage: NativeStorage,
@@ -294,12 +294,15 @@ pub trait FullNodeBlueprint<M: ExecutionMode>: RollupBlueprint<M> {
         prover_config: Option<RollupProverConfig<<Self::Spec as Spec>::InnerZkvm>>,
         start_at_rollup_height: Option<RollupHeight>,
         stop_at_rollup_height: Option<RollupHeight>,
-        exec_config: &<<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::Input,
+        exec_config: Option<<<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::Input>,
     ) -> anyhow::Result<Rollup<Self, M>>
     where
         <Self::Spec as Spec>::Storage: NativeStorage,
     {
-        <<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::configure(exec_config);
+        if let Some(exec_config) = &exec_config {
+            tracing::debug!("Initializing module execution config");
+            <<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::configure(exec_config);
+        }
 
         let (main_shutdown_sender, mut main_shutdown_receiver) = tokio::sync::watch::channel(());
         main_shutdown_receiver.mark_unchanged();
