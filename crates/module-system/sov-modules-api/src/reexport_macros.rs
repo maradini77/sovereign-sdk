@@ -290,6 +290,7 @@ pub use sov_modules_macros::ModuleInfo;
 /// # impl<S: Spec> sov_modules_api::Module for MyModule<S> {
 /// #    type Spec = S;
 /// #    type Config = ();
+/// #    type ExecutionConfig = ();
 /// #    type Error = anyhow::Error;
 /// #    type CallMessage = ();
 /// #    type Event = ();
@@ -330,6 +331,7 @@ pub use sov_modules_macros::ModuleInfo;
 /// # impl<S: Spec> sov_modules_api::Module for MyModule<S> {
 /// #    type Spec = S;
 /// #    type Config = ();
+/// #    type ExecutionConfig = ();
 /// #    type Error = anyhow::Error;
 /// #    type CallMessage = ();
 /// #    type Event = ();
@@ -374,6 +376,7 @@ pub use sov_modules_macros::ModuleInfo;
 /// # impl<S: Spec> sov_modules_api::Module for MyModule<S> {
 /// #    type Spec = S;
 /// #    type Config = ();
+/// #    type ExecutionConfig = ();
 /// #    type Error = anyhow::Error;
 /// #    type CallMessage = ();
 /// #    type Event = ();
