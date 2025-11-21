@@ -98,6 +98,7 @@ where
     #[cfg(feature = "native")]
     type GenesisInput = GenesisPaths;
 
+    #[cfg(feature = "native")]
     type ModuleExecutionConfig = ();
 
     type Auth = sov_evm::EvmAuthenticator<S, Self>;
