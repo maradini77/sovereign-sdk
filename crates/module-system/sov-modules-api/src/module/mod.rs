@@ -43,6 +43,7 @@ pub trait Module: Clone {
     ///
     /// This configuration is typically loaded from environment variables or configuration files
     /// at startup, and can differ between different instances in the same rollup network.
+    #[cfg(feature = "native")]
     type ExecutionConfig;
 
     /// Module defined argument to the call method.
@@ -120,10 +121,12 @@ pub trait Module: Clone {
     /// struct MyModule { /* ... */ }
     ///
     /// impl Module for MyModule {
+    ///     #[cfg(feature = "native")]
     ///     type ExecutionConfig = MyModuleExecutionConfig;
     ///     // ... other associated types ...
     ///
     ///     // Initialize offchain components at startup
+    ///     #[cfg(feature = "native")]
     ///     fn init(config: &Self::ExecutionConfig) -> Result<(), Box<dyn std::error::Error>> {
     ///         EXECUTION_CONFIG.set(config.clone())
     ///             .map_err(|_| "Execution config already initialized")?;
@@ -152,6 +155,7 @@ pub trait Module: Clone {
     ///     }
     /// }
     /// ```
+    #[cfg(feature = "native")]
     fn init(_config: &Self::ExecutionConfig) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
