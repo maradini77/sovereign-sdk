@@ -301,7 +301,7 @@ pub trait FullNodeBlueprint<M: ExecutionMode>: RollupBlueprint<M> {
     {
         if let Some(exec_config) = &exec_config {
             tracing::debug!("Initializing module execution config");
-            <<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::configure(exec_config);
+            <<Self::Runtime as RuntimeTrait<Self::Spec>>::ModuleExecutionConfig as ModuleExecutionConfig>::configure(exec_config).map_err(|e|anyhow::anyhow!(e))?;
         }
 
         let (main_shutdown_sender, mut main_shutdown_receiver) = tokio::sync::watch::channel(());
