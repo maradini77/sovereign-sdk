@@ -119,6 +119,7 @@ pub enum CallMessage {
 impl<S: Spec> Module for TestRecipient<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = CallMessage;
     type Event = Event<S>;
     type Error = anyhow::Error;

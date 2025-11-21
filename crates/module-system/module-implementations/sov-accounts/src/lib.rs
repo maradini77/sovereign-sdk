@@ -56,6 +56,8 @@ impl<S: Spec> Module for Accounts<S> {
 
     type Config = AccountConfig<S>;
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage;
 
     type Event = ();

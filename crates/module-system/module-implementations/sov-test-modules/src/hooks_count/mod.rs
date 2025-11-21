@@ -53,6 +53,8 @@ impl<S: Spec> Module for HooksCount<S> {
 
     type Config = ();
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage;
 
     type Event = Event;

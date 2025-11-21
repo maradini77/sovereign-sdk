@@ -260,6 +260,7 @@ where
 {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = CallMessage<S>;
     type Event = Event<S>;
     type Error = anyhow::Error;

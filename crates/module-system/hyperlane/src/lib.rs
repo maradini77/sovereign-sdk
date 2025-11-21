@@ -116,6 +116,8 @@ where
 
     type Config = ();
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage<S>;
 
     type Event = Event;

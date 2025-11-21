@@ -43,6 +43,7 @@ pub struct TestAccessoryModule<S: Spec> {
 impl<S: Spec> Module for TestAccessoryModule<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = CallMessage;
     type Event = ();
     type Error = anyhow::Error;

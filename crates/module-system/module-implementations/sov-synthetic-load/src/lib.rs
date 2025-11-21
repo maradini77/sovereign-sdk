@@ -45,6 +45,8 @@ impl<S: Spec> Module for SyntheticLoad<S> {
 
     type Config = ();
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage;
 
     type Event = Event;

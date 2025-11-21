@@ -61,6 +61,8 @@ impl<S: Spec> Module for ValueSetter<S> {
 
     type Config = ValueSetterConfig<S>;
 
+    type ExecutionConfig = ();
+
     type CallMessage = CallMessage<S>;
 
     type Event = Event;

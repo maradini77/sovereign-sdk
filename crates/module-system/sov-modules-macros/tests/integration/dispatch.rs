@@ -59,6 +59,7 @@ pub mod first_test_module {
     impl<S: Spec> Module for FirstTestStruct<S> {
         type Spec = S;
         type Config = Config;
+        type ExecutionConfig = ();
         type CallMessage = u8;
         type Event = Event;
         type Error = anyhow::Error;
@@ -130,6 +131,7 @@ pub mod second_test_module {
     impl<S: Spec> Module for SecondTestStruct<S> {
         type Spec = S;
         type Config = ();
+        type ExecutionConfig = ();
         type CallMessage = u8;
         type Event = Event;
         type Error = anyhow::Error;
@@ -223,6 +225,7 @@ pub mod third_test_module {
     impl<S: Spec, OtherGeneric: ModuleThreeStorable> Module for ThirdTestStruct<S, OtherGeneric> {
         type Spec = S;
         type Config = ();
+        type ExecutionConfig = ();
         type CallMessage = OtherGeneric;
         type Event = Event;
         type Error = anyhow::Error;

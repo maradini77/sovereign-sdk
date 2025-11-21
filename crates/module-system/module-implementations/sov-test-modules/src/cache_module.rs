@@ -117,6 +117,8 @@ impl<S: Spec> Module for CacheAndRevertTester<S> {
 
     type Config = ();
 
+    type ExecutionConfig = ();
+
     type CallMessage = CallMessage;
 
     type Event = Event;

@@ -43,6 +43,8 @@ where
 
     type Config = ();
 
+    type ExecutionConfig = ();
+
     type CallMessage = ();
 
     type Event = ();

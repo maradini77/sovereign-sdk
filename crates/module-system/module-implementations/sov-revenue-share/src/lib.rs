@@ -47,6 +47,7 @@ pub struct RevenueShare<S: Spec> {
 impl<S: Spec> Module for RevenueShare<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = CallMessage<S>;
     type Event = ();
     type Error = anyhow::Error;

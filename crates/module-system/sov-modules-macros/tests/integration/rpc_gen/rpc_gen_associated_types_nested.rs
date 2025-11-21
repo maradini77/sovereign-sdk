@@ -70,6 +70,7 @@ pub mod my_module {
     {
         type Spec = S;
         type Config = D;
+        type ExecutionConfig = ();
         type CallMessage = D;
         type Event = ();
         type Error = anyhow::Error;

@@ -72,6 +72,7 @@ pub struct InterchainGasPaymaster<S: Spec> {
 impl<S: Spec> Module for InterchainGasPaymaster<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = call::CallMessage<S>;
     type Event = Event<S>;
     type Error = anyhow::Error;

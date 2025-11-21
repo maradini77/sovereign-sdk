@@ -142,6 +142,8 @@ impl<S: Spec> Module for Paymaster<S> {
 
     type Config = genesis::PaymasterConfig<S>;
 
+    type ExecutionConfig = ();
+
     type CallMessage = CallMessage<S>;
 
     type Event = Event<S>;

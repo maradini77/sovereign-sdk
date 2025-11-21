@@ -25,6 +25,8 @@ impl<S: Spec> sov_modules_api::Module for OperatorIncentives<S> {
 
     type Config = OperatorIncentivesConfig<S>;
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage<S>;
 
     type Event = ();

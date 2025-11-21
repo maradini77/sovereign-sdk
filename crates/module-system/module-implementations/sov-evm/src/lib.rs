@@ -192,6 +192,8 @@ where
 
     type Config = EvmGenesisConfig;
 
+    type ExecutionConfig = ();
+
     type CallMessage = CallMessage;
 
     type Event = ();

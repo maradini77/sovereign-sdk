@@ -23,6 +23,7 @@ pub struct IncorrectHooksOverride<S: Spec> {
 impl<S: Spec> Module for IncorrectHooksOverride<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = ();
     type Event = ();
     type Error = anyhow::Error;

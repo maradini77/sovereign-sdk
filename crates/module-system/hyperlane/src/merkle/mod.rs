@@ -36,6 +36,7 @@ pub struct MerkleTreeHook<S: Spec> {
 impl<S: Spec> Module for MerkleTreeHook<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = ();
     type Event = Event;
     type Error = anyhow::Error;

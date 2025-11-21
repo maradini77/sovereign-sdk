@@ -66,6 +66,8 @@ impl<S: Spec> sov_modules_api::Module for ProverIncentives<S> {
 
     type Config = ProverIncentivesConfig<S>;
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage;
 
     type Event = Event<S>;

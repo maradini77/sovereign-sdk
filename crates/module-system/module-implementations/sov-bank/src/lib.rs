@@ -81,6 +81,8 @@ impl<S: Spec> Module for Bank<S> {
 
     type Config = BankConfig<S>;
 
+    type ExecutionConfig = ();
+
     type CallMessage = call::CallMessage<S>;
 
     type Event = Event<S>;

@@ -629,6 +629,8 @@ impl<S: Spec> Module for ChainState<S> {
 
     type Config = ChainStateConfig<S>;
 
+    type ExecutionConfig = ();
+
     type Event = Event<S>;
 
     type Error = anyhow::Error;

@@ -25,6 +25,7 @@ pub struct RoutingRecipient<S: Spec> {
 impl<S: Spec> Module for RoutingRecipient<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = ();
     type Event = ();
     type Error = anyhow::Error;

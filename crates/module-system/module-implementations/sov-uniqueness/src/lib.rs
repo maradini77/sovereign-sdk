@@ -100,6 +100,8 @@ impl<S: Spec> Module for Uniqueness<S> {
 
     type Config = ();
 
+    type ExecutionConfig = ();
+
     type CallMessage = NotInstantiable;
 
     type Event = ();

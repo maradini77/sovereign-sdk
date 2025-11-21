@@ -57,6 +57,7 @@ pub enum TestHelperCallMessage<S: Spec> {
 impl<S: Spec> Module for TestHelper<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = TestHelperCallMessage<S>;
     type Event = ();
     type Error = anyhow::Error;

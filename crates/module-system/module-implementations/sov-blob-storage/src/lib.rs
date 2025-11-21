@@ -263,6 +263,7 @@ impl<S: Spec> BlobStorage<S> {
 impl<S: Spec> Module for BlobStorage<S> {
     type Spec = S;
     type Config = ();
+    type ExecutionConfig = ();
     type CallMessage = NotInstantiable;
     type Event = ();
     type Error = anyhow::Error;

@@ -36,7 +36,7 @@ pub enum OperatingMode {
 /// todod
 pub trait ModuleExecutionConfig {
     /// todod
-    type Input;
+    type Input: Clone + Send + Sync;
 
     /// todod
     fn configure(input: &Self::Input) -> ();
